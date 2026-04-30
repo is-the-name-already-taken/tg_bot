@@ -1,0 +1,17 @@
+[Unit]
+Description=Telegram Bot
+After=network-online.target
+
+[Service]
+WorkingDirectory=/home/runner/app/tg_bot
+ExecStart=/home/runner/app/tg_bot/.venv/bin/python main.py
+
+Restart=always
+RestartSec=5
+
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=tgbot
+
+[Install]
+WantedBy=default.target

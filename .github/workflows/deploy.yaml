@@ -1,0 +1,53 @@
+name: Deploy Telegram Bot
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and Deploy to Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 64280
+          script: |
+            APP_DIR="$HOME/app/tg_bot"
+            REPO_URL="https://github.com/is-the-name-already-taken/tg_bot.git"
+
+            if [ ! -d "$APP_DIR" ]; then
+                echo "🚀 git clone..."
+                mkdir -p ~/app
+                git clone "$REPO_URL" "$APP_DIR"
+                cd "$APP_DIR"
+            else
+                echo "🔄 git pull..."
+                cd "$APP_DIR"
+                git pull origin main
+            fi
+
+            if [ ! -f ".env" ]; then
+                echo "❌ Error: .env file is missing. Please create it with the necessary environment variables."
+                exit 1
+            fi
+            
+            ~/.local/bin/uv sync --frozen
+
+            mkdir -p ~/.config/systemd/user/
+            ln -sf ~/app/tg_bot/tgbot.service ~/.config/systemd/user/tgbot.service
+
+            systemctl --user daemon-reload
+            systemctl --user enable tgbot
+            systemctl --user restart tgbot
+
+            if systemctl --user is-active --quiet tgbot; then
+                echo "✅ Deployment Successful and Bot is Running!"
+            else
+                echo "❌ Deployment Failed: Bot is not running."
+                systemctl --user status tgbot
+            fi
