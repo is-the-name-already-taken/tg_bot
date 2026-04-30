@@ -17,6 +17,9 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 64280
           script: |
+            export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+            export DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus"
+
             APP_DIR="$HOME/app/tg_bot"
             REPO_URL="https://github.com/is-the-name-already-taken/tg_bot.git"
 
@@ -39,7 +42,7 @@ jobs:
             ~/.local/bin/uv sync --frozen
 
             mkdir -p ~/.config/systemd/user/
-            ln -sf ~/app/tg_bot/tgbot.service ~/.config/systemd/user/tgbot.service
+            ln -sf /home/${{ secrets.SERVER_USER }}/app/tg_bot/tgbot.service /home/${{ secrets.SERVER_USER }}/.config/systemd/user/tgbot.service
 
             systemctl --user daemon-reload
             systemctl --user enable tgbot
