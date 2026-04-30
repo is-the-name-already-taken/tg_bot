@@ -1,4 +1,4 @@
-name: Deploy Telegram Bot
+name: Deploy
 
 on:
   push:
@@ -20,8 +20,13 @@ jobs:
             export XDG_RUNTIME_DIR="/run/user/$(id -u)"
             export DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus"
 
-            APP_DIR="$HOME/app/tg_bot"
-            REPO_URL="https://github.com/is-the-name-already-taken/tg_bot.git"
+            REPO_NAME="${{ github.event.repository.name }}"
+            OWNER="${{ github.repository_owner }}"
+
+            APP_DIR="$HOME/app/${REPO_NAME}"
+            REPO_URL="https://github.com/${OWNER}/${REPO_NAME}.git"
+            SERVICE_FILE="${REPO_NAME}.service"
+            SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
 
             if [ ! -d "$APP_DIR" ]; then
                 echo "🚀 git clone..."
@@ -39,18 +44,18 @@ jobs:
                 exit 1
             fi
             
-            ~/.local/bin/uv sync --frozen
+            $HOME/.local/bin/uv sync --frozen
 
-            mkdir -p ~/.config/systemd/user/
-            ln -sf /home/${{ secrets.SERVER_USER }}/app/tg_bot/tgbot.service /home/${{ secrets.SERVER_USER }}/.config/systemd/user/tgbot.service
+            mkdir -p "$SYSTEMD_USER_DIR"
+            ln -sf "$APP_DIR/$SERVICE_FILE" "$SYSTEMD_USER_DIR/$SERVICE_FILE"
 
             systemctl --user daemon-reload
-            systemctl --user enable tgbot
-            systemctl --user restart tgbot
+            systemctl --user enable ${REPO_NAME}
+            systemctl --user restart ${REPO_NAME}
 
-            if systemctl --user is-active --quiet tgbot; then
+            if systemctl --user is-active --quiet ${REPO_NAME}; then
                 echo "✅ Deployment Successful and Bot is Running!"
             else
                 echo "❌ Deployment Failed: Bot is not running."
-                systemctl --user status tgbot
+                systemctl --user status ${REPO_NAME}
             fi
