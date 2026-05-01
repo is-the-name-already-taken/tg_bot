@@ -111,4 +111,4 @@ async def callback_fl_page(callback_query: types.CallbackQuery, admin_id: int, d
     try:
         await callback_query.message.edit_text(f"Files:\n{response}", reply_markup=builder.as_markup())
     except Exception as e:
-        await callback_query.message.edit_text(f"Error: {e}")
+        print(f"Error occurred while editing message: {e}")
