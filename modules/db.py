@@ -1,17 +1,21 @@
 import random
 
 from pocketbase import PocketBase
+from pocketbase.client import FileUpload
 
 
 class DB:
-    def __init__(self, url: str, email: str, password: str, collection: str):
+    def __init__(
+        self, url: str, email: str, password: str, collection: str, storage: str
+    ):
         self.client = PocketBase(url)
         self.email = email
         self.password = password
         self.collection = collection
+        self.storage = storage
 
         self._login()
-        
+
     def __len__(self):
         self._login()
         result = self.client.collection(self.collection).get_list(1, 1)
@@ -26,13 +30,15 @@ class DB:
     def _safe_str(self, string: str):
         return string.strip().lower().replace(" ", "_")
 
-    def get(self, content: str):
+    def get(self, content: str, collection: str = None, field_name: str = None):
         self._login()
         content = self._safe_str(content)
+        collection = collection if collection else self.collection
+        field_name = field_name if field_name else "content"
 
         try:
-            return self.client.collection(self.collection).get_first_list_item(
-                f'content = "{content}"'
+            return self.client.collection(collection).get_first_list_item(
+                f'{field_name} = "{content}"'
             )
         except Exception:
             return None
@@ -52,15 +58,17 @@ class DB:
         else:
             data = {"content": content, "used": 1 if is_good else -1, "type": type}
             return self.client.collection(self.collection).create(data)
-        
+
     def like(self, like_content: str):
         self._login()
         like_content = self._safe_str(like_content)
-        
+
         try:
-            return self.client.collection(self.collection).get_list(
-                filter=f'content ~ "{like_content}"'
-            ).items
+            return (
+                self.client.collection(self.collection)
+                .get_list(filter=f'content ~ "{like_content}"')
+                .items
+            )
         except Exception:
             return []
 
@@ -97,6 +105,34 @@ class DB:
 
         result = self.client.collection(self.collection).get_list(page, per_page)
         return result.items
+
+    def upload_file(self, file_path, file_name):
+        self._login()
+        file_name = self._safe_str(file_name)
+
+        try:
+            with open(file_path, "rb") as f:
+                data = {
+                    "filename": file_name,
+                    "file": FileUpload((file_name, f)),
+                }
+                return self.client.collection(self.storage).create(data)
+        except Exception as e:
+            print(f"Error uploading file: {e}")
+            return None
+
+    def get_file_url(self, file_name):
+        self._login()
+        file_name = self._safe_str(file_name)
+        record = self.get(file_name, collection=self.storage, field_name="filename")
+
+        if not record or not record.file:
+            return None
+        
+        if not hasattr(record, 'collection_id'):
+            record.collection_id = record.collection_id if hasattr(record, 'collection_id') else record.collectionId
+
+        return self.client.get_file_url(record, record.file)
 
 
 if __name__ == "__main__":

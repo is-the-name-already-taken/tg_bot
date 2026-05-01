@@ -7,7 +7,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from dotenv import load_dotenv
 from modules.db import DB
-from modules.handlers import pupils
+from modules.handlers import pupils, storage
 
 
 async def on_startup(bot: Bot, admin_id: int):
@@ -26,18 +26,21 @@ async def main():
     POCKETBASE_ADMIN_EMAIL = os.getenv("POCKETBASE_ADMIN_EMAIL")
     POCKETBASE_ADMIN_PASSWORD = os.getenv("POCKETBASE_ADMIN_PASSWORD")
     POCKETBASE_COLLECTION = os.getenv("POCKETBASE_COLLECTION")
+    POCKETBASE_STORAGE = os.getenv("POCKETBASE_STORAGE")
 
     db = DB(
         POCKETBASE_URL,
         POCKETBASE_ADMIN_EMAIL,
         POCKETBASE_ADMIN_PASSWORD,
         POCKETBASE_COLLECTION,
+        POCKETBASE_STORAGE
     )
     bot = Bot(token=TG_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 
     dp = Dispatcher()
     dp.startup.register(on_startup)
     dp.include_router(pupils.router)
+    dp.include_router(storage.router)
 
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot, admin_id=TG_ADMIN_ID, db=db)
