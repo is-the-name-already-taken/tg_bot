@@ -105,6 +105,12 @@ class DB:
 
         result = self.client.collection(self.collection).get_list(page, per_page)
         return result.items
+    
+    def all_file(self, page: int, per_page: int):
+        self._login()
+
+        result = self.client.collection(self.storage).get_list(page, per_page)
+        return result.items
 
     def upload_file(self, file_path, file_name):
         self._login()
