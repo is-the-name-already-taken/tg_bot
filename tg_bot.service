@@ -11,7 +11,7 @@ RestartSec=5
 
 StandardOutput=syslog
 StandardError=syslog
-SyslogIdentifier=tgbot
+SyslogIdentifier=tg_bot
 
 [Install]
 WantedBy=default.target

@@ -26,6 +26,13 @@ class DB:
             self.client.collection("_superusers").auth_with_password(
                 self.email, self.password
             )
+        else:
+            try:
+                self.client.collection("_superusers").get_list(1, 1)
+            except Exception:
+                self.client.collection("_superusers").auth_with_password(
+                    self.email, self.password
+                )
 
     def _safe_str(self, string: str):
         return string.strip().lower().replace(" ", "_")
@@ -105,7 +112,7 @@ class DB:
 
         result = self.client.collection(self.collection).get_list(page, per_page)
         return result.items
-    
+
     def all_file(self, page: int, per_page: int):
         self._login()
 
@@ -134,9 +141,13 @@ class DB:
 
         if not record or not record.file:
             return None
-        
-        if not hasattr(record, 'collection_id'):
-            record.collection_id = record.collection_id if hasattr(record, 'collection_id') else record.collectionId
+
+        if not hasattr(record, "collection_id"):
+            record.collection_id = (
+                record.collection_id
+                if hasattr(record, "collection_id")
+                else record.collectionId
+            )
 
         return self.client.get_file_url(record, record.file)
 
@@ -150,12 +161,14 @@ if __name__ == "__main__":
     POCKETBASE_ADMIN_EMAIL = os.getenv("POCKETBASE_ADMIN_EMAIL")
     POCKETBASE_ADMIN_PASSWORD = os.getenv("POCKETBASE_ADMIN_PASSWORD")
     POCKETBASE_COLLECTION = os.getenv("POCKETBASE_COLLECTION")
+    POCKETBASE_STORAGE = os.getenv("POCKETBASE_STORAGE")
 
     db = DB(
         POCKETBASE_URL,
         POCKETBASE_ADMIN_EMAIL,
         POCKETBASE_ADMIN_PASSWORD,
         POCKETBASE_COLLECTION,
+        POCKETBASE_STORAGE,
     )
 
     print(db.upsert("test content", True, 1))
